@@ -52,11 +52,51 @@ app.post('/api/send', async (req, res) => {
   }
 
   try {
+    // Send email to admin
     await transporter.sendMail({
       from: `"Website Form" <${process.env.EMAIL_USER}>`,
       to: process.env.RECEIVER_EMAIL,
       subject,
       html,
+    });
+
+    // Send confirmation email to user
+    let userSubject = '';
+    let userHtml = '';
+
+    if (type === 'call') {
+      userSubject = 'Your Call Booking Confirmation';
+      userHtml = `
+        <h2>Thank you for booking a call!</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>Your call has been scheduled with the following details:</p>
+        <ul>
+          <li><strong>Date:</strong> ${data.date}</li>
+          <li><strong>Time:</strong> ${data.time}</li>
+          <li><strong>Priority:</strong> ${data.priority}</li>
+        </ul>
+        <p>We will contact you at <strong>${data.phone}</strong> or <strong>${data.email}</strong>.</p>
+        <p>If you need to reschedule or have any questions, please reply to this email.</p>
+        <p>Best regards,<br>Your Company Team</p>
+      `;
+    } else if (type === 'email') {
+      userSubject = 'We Received Your Message';
+      userHtml = `
+        <h2>Thank you for contacting us!</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>We have received your message and will get back to you as soon as possible.</p>
+        <p><strong>Your message:</strong></p>
+        <blockquote>${data.message}</blockquote>
+        <p>If you have any urgent questions, feel free to reply to this email.</p>
+        <p>Best regards,<br>Your Company Team</p>
+      `;
+    }
+
+    await transporter.sendMail({
+      from: `"Website Form" <${process.env.EMAIL_USER}>`,
+      to: data.email,
+      subject: userSubject,
+      html: userHtml,
     });
 
     res.status(200).json({ success: true, message: 'Email sent successfully!' });
